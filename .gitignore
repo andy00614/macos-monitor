@@ -1,0 +1,21 @@
+# Swift / SwiftPM build
+.build/
+.swiftpm/
+Package.resolved
+*.xcodeproj/
+
+# Generated app bundle artifacts (rebuilt by run.sh / package_dmg.sh)
+MacosMonitor.app/Contents/MacOS/MacosMonitor
+MacosMonitor.app/Contents/Resources/AppIcon.icns
+AppIcon.iconset/
+
+# DMG artifacts
+*.dmg
+.dmg-staging/
+
+# macOS
+.DS_Store
+
+# Editors
+.vscode/
+.idea/
