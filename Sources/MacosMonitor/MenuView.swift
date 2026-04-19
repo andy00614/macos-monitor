@@ -15,45 +15,38 @@ final class MetricsModel: ObservableObject {
     }
 }
 
-private enum Tab: String, CaseIterable { case local = "Local", remote = "Remote" }
-
-// MARK: - Container with tab switcher
+// MARK: - Container: stacks Local + Remote sections
 
 struct MenuView: View {
     @ObservedObject var model: MetricsModel
     @ObservedObject var remote: RemoteSampler
-    @State private var tab: Tab = .local
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Picker("", selection: $tab) {
-                ForEach(Tab.allCases, id: \.self) { Text($0.rawValue).tag($0) }
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-
-            Group {
-                switch tab {
-                case .local:  LocalView(model: model)
-                case .remote: RemoteView(remote: remote)
-                }
-            }
-
-            Divider()
+        VStack(alignment: .leading, spacing: 0) {
+            LocalSection(model: model)
+            sectionDivider
+            RemoteSection(remote: remote)
+            sectionDivider
             FooterRow()
+                .padding(.top, 12)
         }
         .padding(16)
         .frame(width: 280)
     }
+
+    private var sectionDivider: some View {
+        Divider().padding(.vertical, 12)
+    }
 }
 
-// MARK: - Local tab
+// MARK: - Local section
 
-private struct LocalView: View {
+private struct LocalSection: View {
     @ObservedObject var model: MetricsModel
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 14) {
+            SectionHeader(title: "THIS MAC", dotColor: .green, trailing: EmptyView())
             MetricRow(title: "CPU",
                       value: String(format: "%.1f%%", model.cpu * 100),
                       fraction: model.cpu)
@@ -68,7 +61,7 @@ private struct LocalView: View {
             IORow(label: "NETWORK",
                   down: model.network.bytesInPerSec,
                   up: model.network.bytesOutPerSec)
-            Divider()
+            Divider().padding(.vertical, 4)
             ProcessList(processes: model.topProcesses)
         }
     }
@@ -81,23 +74,32 @@ private struct LocalView: View {
     }
 }
 
-// MARK: - Remote tab
+// MARK: - Remote section (inline, no tab)
 
-private struct RemoteView: View {
+private struct RemoteSection: View {
     @ObservedObject var remote: RemoteSampler
     @State private var hostDraft: String = UserDefaults.standard.string(forKey: "remoteHost") ?? ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            statusBadge
+            SectionHeader(title: sectionTitle, dotColor: statusColor, trailing: trailingControl)
             switch remote.status {
-            case .idle, .disconnected, .error:
+            case .idle, .disconnected:
+                configForm
+            case .error(let msg):
+                Text(msg)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.red)
+                    .lineLimit(3)
+                    .truncationMode(.tail)
                 configForm
             case .connecting:
-                ProgressView("Connecting…")
-                    .controlSize(.small)
-                    .font(.system(size: 11))
-                    .foregroundStyle(Color(nsColor: .secondaryLabelColor))
+                HStack(spacing: 6) {
+                    ProgressView().controlSize(.small)
+                    Text("Connecting…")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color(nsColor: .secondaryLabelColor))
+                }
             case .connected:
                 if let s = remote.snapshot {
                     connectedMetrics(s)
@@ -110,38 +112,39 @@ private struct RemoteView: View {
         }
     }
 
-    @ViewBuilder private var statusBadge: some View {
-        HStack(spacing: 6) {
-            Circle().fill(statusColor).frame(width: 6, height: 6)
-            Text(statusLabel)
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(Color(nsColor: .secondaryLabelColor))
-            Spacer()
-            if case .connected = remote.status {
-                Button("Disconnect") { remote.disconnect() }
-                    .buttonStyle(.plain)
-                    .font(.system(size: 11))
-                    .foregroundStyle(Color(nsColor: .secondaryLabelColor))
-            }
+    private var sectionTitle: String {
+        switch remote.status {
+        case .idle:                  return "REMOTE"
+        case .disconnected:          return "REMOTE · DISCONNECTED"
+        case .connecting:            return "REMOTE · CONNECTING"
+        case .connected(let h):      return "REMOTE · \(h.uppercased())"
+        case .error:                 return "REMOTE · ERROR"
         }
     }
 
     private var statusColor: Color {
         switch remote.status {
-        case .connected: return .green
-        case .connecting: return .orange
-        case .error: return .red
-        case .idle, .disconnected: return Color(nsColor: .tertiaryLabelColor)
+        case .connected:            return .green
+        case .connecting:           return .orange
+        case .error:                return .red
+        case .idle, .disconnected:  return Color(nsColor: .tertiaryLabelColor)
         }
     }
 
-    private var statusLabel: String {
-        switch remote.status {
-        case .idle:                    return "NO HOST"
-        case .disconnected:            return "DISCONNECTED"
-        case .connecting:              return "CONNECTING"
-        case .connected(let h):        return h.uppercased()
-        case .error(let msg):          return "ERROR: \(msg)"
+    @ViewBuilder private var trailingControl: some View {
+        if case .connected = remote.status {
+            Button("Disconnect") { remote.disconnect() }
+                .buttonStyle(.plain)
+                .font(.system(size: 11))
+                .foregroundStyle(Color(nsColor: .secondaryLabelColor))
+        } else if case .error = remote.status {
+            Button("Retry") {
+                let saved = UserDefaults.standard.string(forKey: "remoteHost") ?? ""
+                if !saved.isEmpty { remote.connect(host: saved) }
+            }
+            .buttonStyle(.plain)
+            .font(.system(size: 11))
+            .foregroundStyle(Color(nsColor: .secondaryLabelColor))
         }
     }
 
@@ -220,6 +223,26 @@ private struct RemoteView: View {
         if d > 0 { return "\(d)d \(h)h" }
         if h > 0 { return "\(h)h \(m)m" }
         return "\(m)m"
+    }
+}
+
+// MARK: - Section header (status dot + uppercase label + optional trailing control)
+
+private struct SectionHeader<Trailing: View>: View {
+    let title: String
+    let dotColor: Color
+    let trailing: Trailing
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Circle().fill(dotColor).frame(width: 6, height: 6)
+            Text(title)
+                .font(.system(size: 10, weight: .semibold))
+                .tracking(0.6)
+                .foregroundStyle(Color(nsColor: .secondaryLabelColor))
+            Spacer()
+            trailing
+        }
     }
 }
 
@@ -354,29 +377,45 @@ private struct ProcessList: View {
 
 // MARK: - Status bar icon
 
+/// 远程侧的图标渲染参数。nil = 未配置，菜单栏图标回到"仅本地"紧凑模式。
+struct RemoteIconInfo {
+    let cpu: Double
+    let memory: Double
+    let connected: Bool      // false 时 bar 去饱和，仍占空间但视觉上静默
+}
+
 struct StatusBarIconView: View {
     let cpu: Double
     let memory: Double
+    let remote: RemoteIconInfo?
 
     var body: some View {
         HStack(spacing: 6) {
-            metric(symbol: "cpu", fraction: cpu)
-            metric(symbol: "memorychip", fraction: memory)
+            metric(symbol: "cpu",        fraction: cpu,    active: true)
+            metric(symbol: "memorychip", fraction: memory, active: true)
+            if let r = remote {
+                Rectangle()
+                    .fill(Color(nsColor: .tertiaryLabelColor))
+                    .frame(width: 1, height: 10)
+                    .padding(.horizontal, 1)
+                metric(symbol: "server.rack", fraction: r.cpu,    active: r.connected)
+                metric(symbol: "memorychip",  fraction: r.memory, active: r.connected)
+            }
         }
         .padding(.vertical, 2)
     }
 
     @ViewBuilder
-    private func metric(symbol: String, fraction: Double) -> some View {
+    private func metric(symbol: String, fraction: Double, active: Bool) -> some View {
         HStack(spacing: 3) {
             Image(systemName: symbol)
                 .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(Color(nsColor: .labelColor))
+                .foregroundStyle(Color(nsColor: active ? .labelColor : .tertiaryLabelColor))
             ZStack(alignment: .leading) {
                 Capsule()
                     .fill(Color(nsColor: .tertiaryLabelColor))
                 Capsule()
-                    .fill(color(for: fraction))
+                    .fill(active ? color(for: fraction) : Color(nsColor: .tertiaryLabelColor))
                     .frame(width: 14 * CGFloat(min(max(fraction, 0), 1)))
             }
             .frame(width: 14, height: 4)

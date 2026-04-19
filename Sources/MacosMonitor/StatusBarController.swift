@@ -37,7 +37,7 @@ final class StatusBarController {
         guard let button = statusItem.button else { return }
         button.target = self
         button.action = #selector(togglePanel(_:))
-        button.image = renderIcon(cpu: 0, memory: 0)
+        button.image = renderIcon(cpu: 0, memory: 0, remote: nil)
         button.imagePosition = .imageOnly
     }
 
@@ -154,17 +154,49 @@ final class StatusBarController {
         model.topProcesses = procs
 
         guard let button = statusItem.button else { return }
-        button.image = renderIcon(cpu: smoothedCPU, memory: model.memoryFraction)
-        button.toolTip = String(
-            format: "CPU %.1f%%   Memory %d%% (%@)",
+        button.image = renderIcon(cpu: smoothedCPU, memory: model.memoryFraction, remote: remoteIconInfo())
+        button.toolTip = toolTipString(sys: sys)
+    }
+
+    /// 把 RemoteSampler 的状态翻译成 icon 需要的 RemoteIconInfo。
+    /// - idle（未配置 host）→ nil（菜单栏图标不显示远程半）
+    /// - connecting / disconnected / error → connected=false（bar 去饱和占位）
+    /// - connected → connected=true，用最新 snapshot 的数值
+    private func remoteIconInfo() -> RemoteIconInfo? {
+        switch remote.status {
+        case .idle:
+            return nil
+        case .connecting, .disconnected, .error:
+            return RemoteIconInfo(cpu: 0, memory: 0, connected: false)
+        case .connected:
+            let s = remote.snapshot
+            return RemoteIconInfo(
+                cpu: s?.cpu ?? 0,
+                memory: s?.memoryFraction ?? 0,
+                connected: true
+            )
+        }
+    }
+
+    private func toolTipString(sys: SystemMetrics) -> String {
+        var parts: [String] = []
+        parts.append(String(
+            format: "Local:  CPU %.1f%%   Memory %d%% (%@)",
             smoothedCPU * 100,
             Int((model.memoryFraction * 100).rounded()),
             ByteCountFormatter.string(fromByteCount: Int64(sys.memoryUsed), countStyle: .memory)
-        )
+        ))
+        if case .connected(let host) = remote.status, let s = remote.snapshot {
+            parts.append(String(
+                format: "Remote (%@):  CPU %.1f%%   Memory %d%%",
+                host, s.cpu * 100, Int((s.memoryFraction * 100).rounded())
+            ))
+        }
+        return parts.joined(separator: "\n")
     }
 
-    private func renderIcon(cpu: Double, memory: Double) -> NSImage? {
-        let renderer = ImageRenderer(content: StatusBarIconView(cpu: cpu, memory: memory))
+    private func renderIcon(cpu: Double, memory: Double, remote: RemoteIconInfo?) -> NSImage? {
+        let renderer = ImageRenderer(content: StatusBarIconView(cpu: cpu, memory: memory, remote: remote))
         renderer.scale = NSScreen.main?.backingScaleFactor ?? 2
         return renderer.nsImage
     }
