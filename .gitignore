@@ -13,6 +13,13 @@ AppIcon.iconset/
 *.dmg
 .dmg-staging/
 
+# Agent: keep source, exclude compiled binaries (ship in Releases instead)
+agent/macos-monitor-agent-*
+
+# Scratch / unrelated
+testing/
+/tmp/
+
 # macOS
 .DS_Store
 

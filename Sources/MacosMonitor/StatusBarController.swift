@@ -9,6 +9,7 @@ final class StatusBarController {
     private let networkSampler = NetworkSampler()
     private let gpuSampler = GPUSampler()
     private let model = MetricsModel()
+    private let remote = RemoteSampler()
     private var timer: Timer?
 
     private var panel: NSPanel?
@@ -25,6 +26,11 @@ final class StatusBarController {
 
         configureButton()
         startSampling()
+
+        // 保存过 host 就自动连，让 App 启动即有实时远程数据
+        if let host = UserDefaults.standard.string(forKey: "remoteHost"), !host.isEmpty {
+            remote.connect(host: host)
+        }
     }
 
     private func configureButton() {
@@ -44,10 +50,10 @@ final class StatusBarController {
     }
 
     private func openPanel() {
-        let hosting = NSHostingController(rootView: MenuView(model: model))
+        let hosting = NSHostingController(rootView: MenuView(model: model, remote: remote))
         hosting.view.layer?.cornerRadius = 12
 
-        let panel = NSPanel(
+        let panel = FocusablePanel(
             contentRect: .zero,
             styleMask: [.nonactivatingPanel, .borderless, .fullSizeContentView],
             backing: .buffered,
@@ -162,4 +168,11 @@ final class StatusBarController {
         renderer.scale = NSScreen.main?.backingScaleFactor ?? 2
         return renderer.nsImage
     }
+}
+
+/// 默认 NSPanel + `.nonactivatingPanel` 不能成为 key window，TextField 就拿不到 focus。
+/// 覆盖这俩属性让它可以接受键盘输入，同时保持 nonactivating（不抢 Dock 焦点）。
+private final class FocusablePanel: NSPanel {
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { true }
 }
