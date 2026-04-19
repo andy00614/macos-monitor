@@ -17,7 +17,7 @@ enum LoginItemService {
                 try SMAppService.mainApp.unregister()
             }
         } catch {
-            NSLog("[MacosMonitor] LoginItem toggle failed: \(error.localizedDescription)")
+            NSLog("[Orbit] LoginItem toggle failed: \(error.localizedDescription)")
         }
     }
 }

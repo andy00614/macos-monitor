@@ -1,4 +1,4 @@
-// macos-monitor-agent — reads /proc on Linux, streams compact JSON
+// orbit-agent — reads /proc on Linux, streams compact JSON
 // snapshots to stdout every `interval` seconds. Exits when stdin closes
 // (so SSH disconnect cleans up automatically).
 package main

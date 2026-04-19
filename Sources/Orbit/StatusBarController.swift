@@ -22,7 +22,7 @@ final class StatusBarController {
 
     init() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        statusItem.autosaveName = "com.macosmonitor.statusbar"
+        statusItem.autosaveName = "com.orbit.statusbar"
 
         configureButton()
         startSampling()

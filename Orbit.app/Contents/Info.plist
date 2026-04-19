@@ -3,13 +3,13 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleExecutable</key>
-    <string>MacosMonitor</string>
+    <string>Orbit</string>
     <key>CFBundleIdentifier</key>
-    <string>com.andy.macosmonitor</string>
+    <string>com.andy.orbit</string>
     <key>CFBundleName</key>
-    <string>MacosMonitor</string>
+    <string>Orbit</string>
     <key>CFBundleDisplayName</key>
-    <string>MacOS Monitor</string>
+    <string>Orbit</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleIconFile</key>

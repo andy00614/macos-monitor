@@ -2,12 +2,12 @@
 import PackageDescription
 
 let package = Package(
-    name: "MacosMonitor",
+    name: "Orbit",
     platforms: [.macOS(.v13)],
     targets: [
         .executableTarget(
-            name: "MacosMonitor",
-            path: "Sources/MacosMonitor"
+            name: "Orbit",
+            path: "Sources/Orbit"
         )
     ]
 )

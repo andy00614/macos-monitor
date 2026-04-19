@@ -1,9 +1,9 @@
 #!/bin/bash
-# 构建并（重新）启动 MacosMonitor.app
+# 构建并（重新）启动 Orbit.app
 set -euo pipefail
 cd "$(dirname "$0")"
 
-APP="MacosMonitor.app"
+APP="Orbit.app"
 
 # 确保 .app bundle 目录结构存在（首次 clone 后 MacOS/ 和 Resources/ 为空）
 mkdir -p "${APP}/Contents/MacOS" "${APP}/Contents/Resources"
@@ -17,9 +17,9 @@ if [ ! -f "${APP}/Contents/Resources/AppIcon.icns" ]; then
 fi
 
 swift build -c release
-cp .build/release/MacosMonitor "${APP}/Contents/MacOS/MacosMonitor"
+cp .build/release/Orbit "${APP}/Contents/MacOS/Orbit"
 
-pkill -x MacosMonitor 2>/dev/null || true
+pkill -x Orbit 2>/dev/null || true
 sleep 0.3
 open "${APP}"
-echo "Launched ${APP} (pid=$(pgrep -x MacosMonitor | tr '\n' ' '))"
+echo "Launched ${APP} (pid=$(pgrep -x Orbit | tr '\n' ' '))"

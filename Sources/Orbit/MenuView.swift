@@ -171,7 +171,7 @@ private struct RemoteSection: View {
                 .keyboardShortcut(.defaultAction)
                 .disabled(hostDraft.trimmingCharacters(in: .whitespaces).isEmpty)
             }
-            Text("Requires macos-monitor-agent at ~/macos-monitor-agent on the remote.")
+            Text("Requires orbit-agent at ~/orbit-agent on the remote.")
                 .font(.system(size: 10))
                 .foregroundStyle(Color(nsColor: .tertiaryLabelColor))
         }

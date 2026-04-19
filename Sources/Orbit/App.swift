@@ -1,7 +1,7 @@
 import AppKit
 
 @main
-enum MacosMonitorApp {
+enum OrbitApp {
     static func main() {
         let app = NSApplication.shared
         let delegate = AppDelegate()
@@ -28,7 +28,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // App 菜单（必须有，否则 system 不会 bootstrap 菜单链）
         let appItem = NSMenuItem()
         appItem.submenu = NSMenu().with {
-            $0.addItem(NSMenuItem(title: "Quit MacosMonitor",
+            $0.addItem(NSMenuItem(title: "Quit Orbit",
                                   action: #selector(NSApplication.terminate(_:)),
                                   keyEquivalent: "q"))
         }

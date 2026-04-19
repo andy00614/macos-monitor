@@ -1,14 +1,14 @@
 import Foundation
 
-/// 极简文件日志：无论 os_log 怎么脱敏，都能从 /tmp/macosmonitor.log 看到
+/// 极简文件日志：无论 os_log 怎么脱敏，都能从 /tmp/orbit.log 看到
 enum DebugLog {
-    private static let url = URL(fileURLWithPath: "/tmp/macosmonitor.log")
+    private static let url = URL(fileURLWithPath: "/tmp/orbit.log")
     private static let formatter: ISO8601DateFormatter = {
         let f = ISO8601DateFormatter()
         f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         return f
     }()
-    private static let queue = DispatchQueue(label: "com.macosmonitor.debuglog")
+    private static let queue = DispatchQueue(label: "com.orbit.debuglog")
 
     static func write(_ msg: String) {
         queue.async {

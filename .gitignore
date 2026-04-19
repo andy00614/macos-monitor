@@ -5,8 +5,8 @@ Package.resolved
 *.xcodeproj/
 
 # Generated app bundle artifacts (rebuilt by run.sh / package_dmg.sh)
-MacosMonitor.app/Contents/MacOS/MacosMonitor
-MacosMonitor.app/Contents/Resources/AppIcon.icns
+Orbit.app/Contents/MacOS/Orbit
+Orbit.app/Contents/Resources/AppIcon.icns
 AppIcon.iconset/
 
 # DMG artifacts
@@ -14,7 +14,7 @@ AppIcon.iconset/
 .dmg-staging/
 
 # Agent: keep source, exclude compiled binaries (ship in Releases instead)
-agent/macos-monitor-agent-*
+agent/orbit-agent-*
 
 # Scratch / unrelated
 testing/

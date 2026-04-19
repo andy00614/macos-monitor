@@ -41,7 +41,7 @@ final class RemoteSampler: ObservableObject {
         return d
     }()
 
-    func connect(host: String, agentPath: String = "./macos-monitor-agent", interval: Double = 2.0) {
+    func connect(host: String, agentPath: String = "./orbit-agent", interval: Double = 2.0) {
         disconnect()
         let trimmed = host.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {

@@ -1,11 +1,12 @@
-# macos-monitor
+# Orbit
 
-Lightweight macOS menu bar monitor. Native Swift, zero dependencies.
+Lightweight macOS menu bar monitor for your Mac + any Linux VPS. Native Swift, zero dependencies.
 
 ## Features
 
-- **Local tab** — CPU / memory / GPU / network, EMA-smoothed
-- **Remote tab** — same metrics from a Linux VPS over SSH (see below)
+- **This Mac** — CPU / memory / GPU / network, EMA-smoothed
+- **Remote** — same metrics streamed from a Linux VPS over one persistent SSH connection
+- Both shown at a glance in the menu bar icon (local bars + divider + remote bars)
 - Top 3 processes by CPU
 - Launch at login (`SMAppService`)
 - ~0.1% CPU, ~15 MB RSS while running
@@ -16,7 +17,7 @@ Lightweight macOS menu bar monitor. Native Swift, zero dependencies.
 ./run.sh
 ```
 
-Requires macOS 13+ and Xcode Command Line Tools. First run generates the `.icns` icon, builds the release binary, and launches `MacosMonitor.app`.
+Requires macOS 13+ and Xcode Command Line Tools. First run generates the `.icns` icon, builds the release binary, and launches `Orbit.app`.
 
 ## Distribute
 
@@ -24,7 +25,7 @@ Requires macOS 13+ and Xcode Command Line Tools. First run generates the `.icns`
 ./tools/package_dmg.sh
 ```
 
-Produces `MacosMonitor.dmg` (~900 KB, unsigned). Recipients need to right-click → Open, or `xattr -dr com.apple.quarantine MacosMonitor.app` to clear Gatekeeper quarantine.
+Produces `Orbit.dmg` (~900 KB, unsigned). Recipients need to right-click → Open, or `xattr -dr com.apple.quarantine Orbit.app` to clear Gatekeeper quarantine.
 
 ## Remote monitoring (VPS)
 
@@ -37,21 +38,21 @@ cd agent
 ./build.sh              # produces linux/amd64 and linux/arm64 binaries
 ```
 
-Or grab the pre-built binary from the [latest release](https://github.com/andy00614/macos-monitor/releases).
+Or grab the pre-built binary from the [latest release](https://github.com/andy00614/orbit/releases).
 
 ### 2. Deploy to your VPS
 
 ```sh
 # pick the binary matching your VPS architecture (uname -m on the VPS)
-scp agent/macos-monitor-agent-linux-amd64 user@host:~/macos-monitor-agent
-ssh user@host 'chmod +x ~/macos-monitor-agent'
+scp agent/orbit-agent-linux-amd64 user@host:~/orbit-agent
+ssh user@host 'chmod +x ~/orbit-agent'
 ```
 
 Prerequisites on the VPS: Linux with `/proc` (any modern distro); no other dependencies — the binary is statically linked.
 
 ### 3. Connect from the app
 
-Open the popover → **Remote** tab → paste `user@host` (or an `~/.ssh/config` alias) → **Connect**. The host is saved to `UserDefaults`, so the next launch auto-reconnects.
+Open the popover → **Remote** section → paste `user@host` (or an `~/.ssh/config` alias) → **Connect**. The host is saved to `UserDefaults`, so the next launch auto-reconnects.
 
 ### How it works
 
@@ -59,8 +60,8 @@ Open the popover → **Remote** tab → paste `user@host` (or an `~/.ssh/config`
  macOS App  ──┐                     ┌── VPS
               │                     │
               │   ssh user@host     │
-              │   ./macos-monitor-  │
-              │   agent -interval 2 │
+              │   ./orbit-agent     │
+              │   -interval 2       │
               │                     │
    NSProcess ─┼──── stdin pipe ─────┼─► agent (keeps agent alive)
               │                     │
@@ -92,7 +93,7 @@ CPU values go through an exponential moving average (α = 0.45) to kill jitter w
 ## Project layout
 
 ```
-Sources/MacosMonitor/
+Sources/Orbit/
 ├── App.swift                 # @main, AppDelegate, Edit menu setup
 ├── StatusBarController.swift # panel + timer + orchestration
 ├── SystemMetrics.swift       # Mach
@@ -101,7 +102,7 @@ Sources/MacosMonitor/
 ├── GPUSampler.swift          # IOKit
 ├── LoginItemService.swift    # SMAppService
 ├── RemoteSampler.swift       # spawns ssh, reads JSON stream
-├── DebugLog.swift            # /tmp/macosmonitor.log
+├── DebugLog.swift            # /tmp/orbit.log
 └── MenuView.swift            # SwiftUI views
 agent/
 ├── main.go                   # Linux agent: reads /proc, streams JSON

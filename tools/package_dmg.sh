@@ -1,11 +1,11 @@
 #!/bin/bash
-# 打包 MacosMonitor.app 为可分发的 DMG。
-# 产物：MacosMonitor.dmg（挂载后拖到 Applications 即安装）。
+# 打包 Orbit.app 为可分发的 DMG。
+# 产物：Orbit.dmg（挂载后拖到 Applications 即安装）。
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-APP_NAME="MacosMonitor"
-VOL_NAME="MacOS Monitor"
+APP_NAME="Orbit"
+VOL_NAME="Orbit"
 STAGING=".dmg-staging"
 DMG_OUT="${APP_NAME}.dmg"
 APP="${APP_NAME}.app"

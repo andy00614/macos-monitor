@@ -1,5 +1,10 @@
 #!/usr/bin/env swift
-// 生成 MacosMonitor 应用图标：绿色 squircle 背景 + 白色 SF Symbol "cpu.fill"
+// 生成 Orbit 应用图标：
+//   - 深色 squircle 渐变背景（夜空）
+//   - 中心实心圆（星球）
+//   - 绕着它的虚线椭圆（轨道）
+//   - 轨道上一颗亮点（卫星 = 代表远程监控的那台机器）
+//
 // 用法：swift tools/generate_icon.swift <output_dir>  （默认 AppIcon.iconset）
 
 import AppKit
@@ -44,42 +49,82 @@ func renderIcon(side: Int) -> NSImage {
     ctx.addPath(path)
     ctx.clip()
 
-    // 渐变背景：深绿 → 亮绿（+ 一点点薄荷感）
-    let colors = [
-        NSColor(red: 0.18, green: 0.78, blue: 0.42, alpha: 1.0).cgColor,  // 底部
-        NSColor(red: 0.24, green: 0.90, blue: 0.56, alpha: 1.0).cgColor,  // 顶部
+    // 背景：深蓝紫渐变（夜空 / 深空）
+    let bgColors = [
+        NSColor(red: 0.09, green: 0.11, blue: 0.22, alpha: 1.0).cgColor,  // 底部 深蓝
+        NSColor(red: 0.17, green: 0.15, blue: 0.34, alpha: 1.0).cgColor,  // 顶部 深紫
     ] as CFArray
-    let gradient = CGGradient(
+    let bg = CGGradient(
         colorsSpace: CGColorSpaceCreateDeviceRGB(),
-        colors: colors,
+        colors: bgColors,
         locations: [0, 1]
     )!
-    ctx.drawLinearGradient(
-        gradient,
-        start: CGPoint(x: 0, y: 0),
-        end: CGPoint(x: 0, y: s),
+    ctx.drawLinearGradient(bg, start: CGPoint(x: 0, y: 0), end: CGPoint(x: 0, y: s), options: [])
+
+    // 几何（按 side 比例缩放，保证所有尺寸下视觉一致）
+    let cx = s / 2
+    let cy = s / 2
+    let planetRadius = s * 0.14
+    let orbitRadiusX = s * 0.34
+    let orbitRadiusY = s * 0.20   // 椭圆轨道（斜看视角）
+    let orbitStroke  = s * 0.018
+    let satRadius    = s * 0.07
+
+    // 轨道：倾斜 -25° 的椭圆虚线
+    let orbitDash: [CGFloat] = [s * 0.03, s * 0.03]
+    ctx.saveGState()
+    ctx.translateBy(x: cx, y: cy)
+    ctx.rotate(by: -25 * .pi / 180)
+    ctx.setLineWidth(orbitStroke)
+    ctx.setStrokeColor(NSColor(white: 1.0, alpha: 0.45).cgColor)
+    ctx.setLineDash(phase: 0, lengths: orbitDash)
+    ctx.strokeEllipse(in: CGRect(
+        x: -orbitRadiusX, y: -orbitRadiusY,
+        width: orbitRadiusX * 2, height: orbitRadiusY * 2
+    ))
+    ctx.restoreGState()
+
+    // 星球（中心实心圆 + 柔和径向高光）
+    let planetRect = CGRect(
+        x: cx - planetRadius, y: cy - planetRadius,
+        width: planetRadius * 2, height: planetRadius * 2
+    )
+    let planetGrad = CGGradient(
+        colorsSpace: CGColorSpaceCreateDeviceRGB(),
+        colors: [
+            NSColor(red: 0.35, green: 0.88, blue: 0.64, alpha: 1.0).cgColor, // 亮绿
+            NSColor(red: 0.18, green: 0.65, blue: 0.48, alpha: 1.0).cgColor, // 暗绿
+        ] as CFArray,
+        locations: [0, 1]
+    )!
+    ctx.saveGState()
+    ctx.addEllipse(in: planetRect)
+    ctx.clip()
+    ctx.drawRadialGradient(
+        planetGrad,
+        startCenter: CGPoint(x: cx - planetRadius * 0.3, y: cy + planetRadius * 0.4),
+        startRadius: 0,
+        endCenter: CGPoint(x: cx, y: cy),
+        endRadius: planetRadius,
         options: []
     )
+    ctx.restoreGState()
 
-    // SF Symbol 前景：cpu.fill 白色，占 ~55% 区域，微微偏上
-    let config = NSImage.SymbolConfiguration(pointSize: s * 0.6, weight: .semibold)
-    guard let symbol = NSImage(systemSymbolName: "cpu.fill", accessibilityDescription: nil)?
-        .withSymbolConfiguration(config) else {
-        return image
-    }
+    // 卫星：放在轨道上（右上位置，倾斜角度匹配）
+    let angle: CGFloat = -25 * .pi / 180     // 轨道倾角
+    let t: CGFloat = 0.35 * .pi              // 在椭圆上的参数位置（约 63°）
+    // 椭圆参数方程 + 旋转
+    let ex = orbitRadiusX * cos(t)
+    let ey = orbitRadiusY * sin(t)
+    let sx = cx + ex * cos(angle) - ey * sin(angle)
+    let sy = cy + ex * sin(angle) + ey * cos(angle)
 
-    let glyphSize = symbol.size
-    // 白色着色
-    let tinted = NSImage(size: glyphSize, flipped: false) { rect in
-        symbol.draw(in: rect)
-        NSColor.white.set()
-        rect.fill(using: .sourceAtop)
-        return true
-    }
-
-    let x = (s - glyphSize.width) / 2
-    let y = (s - glyphSize.height) / 2
-    tinted.draw(in: NSRect(x: x, y: y, width: glyphSize.width, height: glyphSize.height))
+    let satRect = CGRect(x: sx - satRadius, y: sy - satRadius, width: satRadius * 2, height: satRadius * 2)
+    // 卫星柔光环
+    ctx.setShadow(offset: .zero, blur: s * 0.04, color: NSColor(red: 0.4, green: 0.8, blue: 1.0, alpha: 0.8).cgColor)
+    ctx.setFillColor(NSColor.white.cgColor)
+    ctx.fillEllipse(in: satRect)
+    ctx.setShadow(offset: .zero, blur: 0, color: nil)
 
     return image
 }

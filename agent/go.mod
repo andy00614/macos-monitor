@@ -1,3 +1,3 @@
-module macos-monitor-agent
+module orbit-agent
 
 go 1.21
